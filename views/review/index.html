@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>漂流瓶审核台</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">🍾</div>
+          <div class="brand-text">
+            <h1 id="title">漂流瓶审核台</h1>
+            <p class="subtitle" id="subtitle">AstrBot 插件 · 漂流瓶与评论审核</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="stats" id="stats">
+            <div class="stat">
+              <span class="stat-value" id="stat-pending-bottles">-</span>
+              <span class="stat-label">待审瓶子</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-pending-comments">-</span>
+              <span class="stat-label">待审评论</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-approved-bottles">-</span>
+              <span class="stat-label">已通过瓶子</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-approved-comments">-</span>
+              <span class="stat-label">已通过评论</span>
+            </div>
+          </div>
+          <button class="btn ghost icon-btn" id="refresh" title="刷新数据">⟳</button>
+        </div>
+      </header>
+
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="bottles" role="tab" aria-selected="true">
+          瓶子审核 <span class="badge" id="tab-count-bottles">0</span>
+        </button>
+        <button class="tab" data-tab="comments" role="tab" aria-selected="false">
+          评论审核 <span class="badge" id="tab-count-comments">0</span>
+        </button>
+      </nav>
+
+      <main class="panels">
+        <section class="panel active" id="panel-bottles" role="tabpanel">
+          <div class="meta" id="bottle-meta" hidden>
+            <span class="pill" id="bottle-id">#-</span>
+            <span class="meta-item" id="bottle-user"></span>
+            <span class="meta-item" id="bottle-group"></span>
+            <span class="meta-item" id="bottle-time"></span>
+          </div>
+
+          <article class="card" id="bottle-card" hidden>
+            <p class="content" id="bottle-content"></p>
+            <div class="images" id="bottle-images"></div>
+          </article>
+
+          <div class="empty" id="bottle-empty" hidden>
+            <div class="empty-icon">🌊</div>
+            <p>暂时没有需要审核的漂流瓶</p>
+            <span>去群里丢一个瓶子试试吧</span>
+          </div>
+
+          <div class="actions" id="bottle-actions" hidden>
+            <button class="btn primary" id="bottle-approve">通过<kbd>A</kbd></button>
+            <button class="btn danger" id="bottle-refuse">拒绝<kbd>R</kbd></button>
+            <button class="btn ghost" id="bottle-next">跳过<kbd>N</kbd></button>
+          </div>
+
+          <p class="hint" id="bottle-hint">通过后，这条漂流瓶才会出现在「捡瓶子」里。</p>
+        </section>
+
+        <section class="panel" id="panel-comments" role="tabpanel">
+          <div class="meta" id="comment-meta" hidden>
+            <span class="pill" id="comment-id">评论 #-</span>
+            <span class="meta-item" id="comment-bottle"></span>
+            <span class="meta-item" id="comment-user"></span>
+          </div>
+
+          <article class="card" id="comment-card" hidden>
+            <p class="content" id="comment-content"></p>
+          </article>
+
+          <div class="empty" id="comment-empty" hidden>
+            <div class="empty-icon">💬</div>
+            <p>暂时没有需要审核的评论</p>
+            <span>用户在漂流瓶下的留言会出现在这里</span>
+          </div>
+
+          <div class="actions" id="comment-actions" hidden>
+            <button class="btn primary" id="comment-approve">通过<kbd>A</kbd></button>
+            <button class="btn danger" id="comment-refuse">拒绝<kbd>R</kbd></button>
+            <button class="btn ghost" id="comment-next">跳过<kbd>N</kbd></button>
+          </div>
+
+          <p class="hint" id="comment-hint">通过后，评论会展示在漂流瓶的评论区里。</p>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>AstrBot 漂流瓶插件 · 审核台</span>
+        <span class="dot">·</span>
+        <span id="footer-state">就绪</span>
+      </footer>
+    </div>
+
+    <div class="lightbox" id="lightbox" hidden>
+      <img alt="漂流瓶图片" id="lightbox-img" />
+    </div>
+    <div class="toast" id="toast" hidden></div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

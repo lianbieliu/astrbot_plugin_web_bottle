@@ -1,0 +1,66 @@
+{
+  "max_bottle_pic": {
+    "type": "int",
+    "description": "单条漂流瓶最多允许的图片数量",
+    "hint": "超出的图片会被忽略；设为 0 表示不允许带图。",
+    "default": 2,
+    "slider": { "min": 0, "max": 9, "step": 1 }
+  },
+  "max_bottle_word": {
+    "type": "int",
+    "description": "单条漂流瓶最多允许的字符数",
+    "hint": "同时用于评论长度限制。",
+    "default": 1200,
+    "slider": { "min": 100, "max": 5000, "step": 100 }
+  },
+  "max_bottle_lines": {
+    "type": "int",
+    "description": "单条漂流瓶最多允许的文字行数",
+    "hint": "空行不计入。",
+    "default": 9,
+    "slider": { "min": 1, "max": 50, "step": 1 }
+  },
+  "embedded_help": {
+    "type": "bool",
+    "description": "丢瓶子没写内容时附带帮助",
+    "hint": "关闭后只提示「您还没有写好瓶子的内容哦~」。",
+    "default": true
+  },
+  "cooling_time": {
+    "type": "int",
+    "description": "丢瓶子 / 捡瓶子的冷却时间（秒）",
+    "hint": "按用户独立计算；设为 0 表示不限制。",
+    "default": 6,
+    "slider": { "min": 0, "max": 120, "step": 1 }
+  },
+  "default_nickname": {
+    "type": "string",
+    "description": "获取不到昵称时的默认称呼",
+    "hint": "用于评论区与审核台展示。",
+    "default": "未知昵称"
+  },
+  "bottle_msg_split": {
+    "type": "bool",
+    "description": "漂流瓶正文与评论区分成两条消息发送",
+    "hint": "关闭后会合并成一条消息。",
+    "default": true
+  },
+  "max_bottle_comments": {
+    "type": "int",
+    "description": "捡瓶子时最多展示的评论条数",
+    "default": 3,
+    "slider": { "min": 0, "max": 20, "step": 1 }
+  },
+  "show_sender_name": {
+    "type": "bool",
+    "description": "展示漂流瓶发送者昵称",
+    "hint": "昵称在用户丢瓶子时记录，不依赖协议端接口。",
+    "default": true
+  },
+  "show_group_name": {
+    "type": "bool",
+    "description": "展示漂流瓶来源群聊",
+    "hint": "能取到群名时展示群名，否则展示群号，私聊显示「私聊」。",
+    "default": true
+  }
+}

@@ -1,0 +1,33 @@
+MIT License
+
+Copyright (c) 2024 Xican (luosheng520qaq) — 原作 nonebot-plugin-web-bottle
+Copyright (c) 2026 AstrBot 迁移适配版的修改者
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---------------------------------------------------------------------------
+说明 / Notes
+
+本插件是 nonebot-plugin-web-bottle 的 AstrBot 迁移版本：
+  https://github.com/luosheng520qaq/nonebot-plugin-web-bottle
+
+迁移内容包括：适配 AstrBot 插件规范（Star / filter.command / metadata.yaml /
+_conf_schema.json / 插件数据目录），把原有的独立 FastAPI 审核站点改为
+AstrBot WebUI 内的插件可视化视图（views/ + context.register_web_api），
+并保留原项目的 MIT 许可与署名。
