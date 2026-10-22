@@ -1,0 +1,9 @@
+{
+  "views": {
+    "review": {
+      "title": "Drift Bottle Review",
+      "description": "Review submitted drift bottles and comments",
+      "heading": "Drift Bottle Review"
+    }
+  }
+}

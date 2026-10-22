@@ -1,0 +1,9 @@
+{
+  "views": {
+    "review": {
+      "title": "漂流瓶审核台",
+      "description": "审核用户提交的漂流瓶与评论",
+      "heading": "漂流瓶审核"
+    }
+  }
+}

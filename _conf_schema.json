@@ -1,4 +1,16 @@
 {
+  "require_prefix": {
+    "type": "bool",
+    "description": "指令必须带前缀",
+    "hint": "开启时需要用前缀触发指令（默认 /）；关闭后直接发送「丢瓶子 ……」也能触发，无需 /。",
+    "default": true
+  },
+  "command_prefix": {
+    "type": "string",
+    "description": "插件指令前缀",
+    "hint": "仅在开启「指令必须带前缀」时用于匹配，默认 /，可改成 ! 等。AstrBot 全局唤醒前缀依然有效。",
+    "default": "/"
+  },
   "max_bottle_pic": {
     "type": "int",
     "description": "单条漂流瓶最多允许的图片数量",

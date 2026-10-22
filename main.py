@@ -49,20 +49,75 @@ except Exception:  # pragma: no cover
 
 
 PLUGIN_NAME = "astrbot_plugin_web_bottle"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # 审核状态：0 待审核，100 已拒绝，200 已通过
 STATE_PENDING = 0
 STATE_REJECTED = 100
 STATE_APPROVED = 200
 
-HELP_TEXT = """漂流瓶使用帮助
-/丢瓶子 [文字]（可附带图片）  把瓶子扔进大海，等待审核
-/捡瓶子                       随机捞一个已通过审核的瓶子
-/评论漂流瓶 [编号] [内容]     给漂流瓶留言（需审核后展示）
-/点赞漂流瓶 [编号]            给喜欢的瓶子点个赞
-/查看漂流瓶 [编号]            按编号查看漂流瓶
-/漂流瓶                       显示本帮助"""
+HELP_TEXT_TEMPLATE = """漂流瓶使用帮助
+{p}丢瓶子 [文字]（可附带图片）  把瓶子扔进大海，等待审核
+{p}捡瓶子                       随机捞一个已通过审核的瓶子
+{p}评论漂流瓶 [编号] [内容]     给漂流瓶留言（需审核后展示）
+{p}点赞漂流瓶 [编号]            给喜欢的瓶子点个赞
+{p}查看漂流瓶 [编号]            按编号查看漂流瓶
+{p}漂流瓶                       显示本帮助"""
+
+# 指令 key -> 指令名与别名（用于「无前缀 / 自定义前缀」模式匹配）
+COMMAND_NAMES: dict[str, tuple[str, ...]] = {
+    "help": ("漂流瓶", "漂流瓶菜单", "漂流瓶帮助"),
+    "throw": ("丢瓶子", "扔瓶子"),
+    "get": ("捡瓶子", "捡漂流瓶", "捞瓶子"),
+    "read": ("查看漂流瓶",),
+    "comment": ("评论漂流瓶",),
+    "up": ("点赞漂流瓶",),
+}
+
+_ACTIVE_PLUGIN: "WebBottlePlugin | None" = None
+"""当前已加载的插件实例，供自定义 Filter 读取插件配置。"""
+
+
+def _optional_custom_filter(filter_cls: type) -> Any:
+    """旧版本 AstrBot 没有 custom_filter 时退化为「不注册该指令」。"""
+    decorator = getattr(filter, "custom_filter", None)
+    if decorator is None:
+        return lambda func: func
+    try:
+        return decorator(filter_cls)
+    except Exception:  # pragma: no cover
+        return lambda func: func
+
+
+_CustomFilterBase = getattr(filter, "CustomFilter", object)
+
+
+class CommandPrefixFilter(_CustomFilterBase):  # type: ignore[misc, valid-type]
+    """匹配「没有走 AstrBot 唤醒前缀」的漂流瓶指令。
+
+    只在该过滤器命中时才让事件被唤醒，因此普通聊天不会受影响；
+    命中后交给 ``prefix_command`` 统一分发。
+    """
+
+    def __init__(self, raise_error: bool = True) -> None:
+        if _CustomFilterBase is not object:
+            super().__init__(raise_error)
+
+    def filter(self, event: AstrMessageEvent, cfg: Any) -> bool:
+        plugin = _ACTIVE_PLUGIN
+        if plugin is None:
+            return False
+        try:
+            # 已经通过 @ / 全局唤醒前缀 / 私聊唤醒的事件交给标准指令处理，
+            # 这里直接放行（返回 False），避免同一条消息被处理两次。
+            if getattr(event, "is_at_or_wake_command", False):
+                return False
+            return (
+                plugin.match_command_text(getattr(event, "message_str", "") or "")
+                is not None
+            )
+        except Exception:  # noqa: BLE001
+            return False
 
 
 # --------------------------------------------------------------------------- #
@@ -541,11 +596,31 @@ class WebBottlePlugin(Star):
 
     def __init__(self, context: Context, config: Any = None) -> None:
         super().__init__(context)
+        global _ACTIVE_PLUGIN
+        _ACTIVE_PLUGIN = self
         self.config = config or {}
         self.data_dir = _resolve_data_dir()
         self.store = BottleStore(self.data_dir)
         self._cooldowns: dict[str, dict[str, float]] = {}
         self._register_web_api(context)
+        self._log_runtime_status()
+
+    # ---------------------------- 运行状态日志 ---------------------------- #
+    def _log_runtime_status(self) -> None:
+        """启动时打印审核台与指令前缀状态，方便排查「看不到 WebUI」。"""
+        view_entry = Path(__file__).resolve().parent / "views" / "review" / "index.html"
+        if view_entry.is_file():
+            logger.info(f"漂流瓶审核台视图已就绪：{view_entry}")
+        else:
+            logger.warning(
+                f"未找到审核台视图文件：{view_entry}，"
+                "插件详情页将不会显示「可视化视图」入口"
+            )
+        logger.info(
+            "漂流瓶指令前缀配置：require_prefix=%s, command_prefix=%r",
+            self._cfg_bool("require_prefix", True),
+            self._cfg_str("command_prefix", "/"),
+        )
 
     # ---------------------------- 配置读取 ---------------------------- #
     def _cfg_int(self, key: str, default: int) -> int:
@@ -737,22 +812,99 @@ class WebBottlePlugin(Star):
                 chain.append(Comp.Plain("\n" + comments_text))
         return chains
 
+    # ---------------------------- 帮助文本 ---------------------------- #
+    def _help_text(self) -> str:
+        prefix = self._command_prefix()
+        if not prefix or not self._cfg_bool("require_prefix", True):
+            prefix = ""
+        return HELP_TEXT_TEMPLATE.format(p=prefix)
+
     # ---------------------------- 指令：帮助 ---------------------------- #
     @filter.command("漂流瓶", alias={"漂流瓶菜单", "漂流瓶帮助"})
     async def bottle_help(self, event: AstrMessageEvent):
         """查看漂流瓶插件的使用说明"""
-        yield event.plain_result(HELP_TEXT)
+        yield event.plain_result(self._help_text())
+
+    async def _handle_help(self, event: AstrMessageEvent, args: str = ""):
+        yield event.plain_result(self._help_text())
+
+    # ---------------------------- 无前缀 / 自定义前缀 ---------------------------- #
+    def _command_prefix(self) -> str:
+        return self._cfg_str("command_prefix", "/").strip()
+
+    def _hint_prefix(self) -> str:
+        """用于提示文案的前缀：不要求前缀时返回空串。"""
+        prefix = self._command_prefix()
+        if not prefix or not self._cfg_bool("require_prefix", True):
+            return ""
+        return prefix
+
+    def match_command_text(self, text: str) -> tuple[str, str, str] | None:
+        """匹配指令文本，返回 (指令 key, 命中的指令名, 参数)；不匹配返回 None。"""
+        raw = (text or "").strip()
+        if not raw:
+            return None
+        prefix = self._command_prefix()
+        require_prefix = self._cfg_bool("require_prefix", True)
+        if prefix and raw.startswith(prefix):
+            raw = raw[len(prefix):].lstrip()
+        elif prefix and require_prefix:
+            return None
+        if not raw:
+            return None
+
+        # 长指令优先，避免「漂流瓶」抢先匹配「漂流瓶菜单」
+        ordered = sorted(
+            COMMAND_NAMES.items(),
+            key=lambda item: max(len(name) for name in item[1]),
+            reverse=True,
+        )
+        for key, names in ordered:
+            for name in sorted(names, key=len, reverse=True):
+                if raw == name:
+                    return key, name, ""
+                if raw.startswith(name) and raw[len(name)] in " \t\r\n\u3000":
+                    return key, name, raw[len(name):].strip()
+        return None
+
+    def _command_handlers(self) -> dict[str, Any]:
+        return {
+            "help": self._handle_help,
+            "throw": self._handle_throw,
+            "get": self._handle_get,
+            "read": self._handle_read,
+            "comment": self._handle_comment,
+            "up": self._handle_up,
+        }
+
+    @_optional_custom_filter(CommandPrefixFilter)
+    async def prefix_command(self, event: AstrMessageEvent):
+        """无前缀 / 自定义前缀模式下的指令入口"""
+        matched = self.match_command_text(event.message_str or "")
+        if matched is None:
+            return
+        key, _name, args = matched
+        handler = self._command_handlers().get(key)
+        if handler is None:
+            return
+        async for result in handler(event, args):
+            yield result
 
     # ---------------------------- 指令：丢瓶子 ---------------------------- #
-    @filter.command("丢瓶子", alias={"扔漂流瓶"})
+    @filter.command("丢瓶子", alias={"扔瓶子"})
     async def throw_bottle(self, event: AstrMessageEvent):
         """丢一个漂流瓶，支持文字与图片，审核通过后才会出现"""
+        async for result in self._handle_throw(
+            event, self._command_args(event, "丢瓶子", "扔瓶子")
+        ):
+            yield result
+
+    async def _handle_throw(self, event: AstrMessageEvent, content: str):
         remaining = self._cooldown_remaining(event, "throw")
         if remaining > 0:
             yield event.plain_result(f"丢瓶子冷却中，请 {remaining} 秒后再试~")
             return
 
-        content = self._command_args(event, "丢瓶子", "扔漂流瓶")
         images = await self._message_images(event)
         max_pic = self._cfg_int("max_bottle_pic", 2)
         max_word = self._cfg_int("max_bottle_word", 1200)
@@ -761,7 +913,7 @@ class WebBottlePlugin(Star):
         if not content and not images:
             message = "您还没有写好瓶子的内容哦~"
             if self._cfg_bool("embedded_help", True):
-                message += f"\n{HELP_TEXT}"
+                message += f"\n{self._help_text()}"
             yield event.plain_result(message)
             return
 
@@ -810,6 +962,10 @@ class WebBottlePlugin(Star):
     @filter.command("捡瓶子", alias={"捡漂流瓶", "捞瓶子"})
     async def get_bottle(self, event: AstrMessageEvent):
         """随机捞一个已经通过审核的漂流瓶"""
+        async for result in self._handle_get(event):
+            yield result
+
+    async def _handle_get(self, event: AstrMessageEvent, args: str = ""):
         remaining = self._cooldown_remaining(event, "get")
         if remaining > 0:
             yield event.plain_result(f"捞瓶子冷却中，请 {remaining} 秒后再试~")
@@ -826,9 +982,17 @@ class WebBottlePlugin(Star):
     @filter.command("查看漂流瓶")
     async def read_bottle(self, event: AstrMessageEvent):
         """按编号查看一个漂流瓶"""
-        raw = self._command_args(event, "查看漂流瓶").split()
+        async for result in self._handle_read(
+            event, self._command_args(event, "查看漂流瓶")
+        ):
+            yield result
+
+    async def _handle_read(self, event: AstrMessageEvent, args: str = ""):
+        raw = args.split()
         if not raw:
-            yield event.plain_result("请输入要查看的漂流瓶 ID，例如：/查看漂流瓶 12")
+            yield event.plain_result(
+                f"请输入要查看的漂流瓶 ID，例如：{self._hint_prefix()}查看漂流瓶 12"
+            )
             return
         bottle_id = _safe_int(raw[0], -1)
         if bottle_id < 0:
@@ -852,10 +1016,17 @@ class WebBottlePlugin(Star):
     @filter.command("评论漂流瓶")
     async def comment_bottle(self, event: AstrMessageEvent):
         """给漂流瓶留言，审核通过后展示"""
-        args = self._command_args(event, "评论漂流瓶")
+        async for result in self._handle_comment(
+            event, self._command_args(event, "评论漂流瓶")
+        ):
+            yield result
+
+    async def _handle_comment(self, event: AstrMessageEvent, args: str = ""):
         parts = args.split(maxsplit=1)
         if not parts:
-            yield event.plain_result("用法：/评论漂流瓶 [编号] [评论内容]")
+            yield event.plain_result(
+                f"用法：{self._hint_prefix()}评论漂流瓶 [编号] [评论内容]"
+            )
             return
         bottle_id = _safe_int(parts[0], -1)
         if bottle_id < 0:
@@ -882,11 +1053,17 @@ class WebBottlePlugin(Star):
     @filter.command("点赞漂流瓶")
     async def up_bottle(self, event: AstrMessageEvent):
         """给喜欢的漂流瓶点个赞"""
-        args = self._command_args(event, "点赞漂流瓶").split()
-        if not args:
-            yield event.plain_result("用法：/点赞漂流瓶 [编号]")
+        async for result in self._handle_up(
+            event, self._command_args(event, "点赞漂流瓶")
+        ):
+            yield result
+
+    async def _handle_up(self, event: AstrMessageEvent, args: str = ""):
+        parts = args.split()
+        if not parts:
+            yield event.plain_result(f"用法：{self._hint_prefix()}点赞漂流瓶 [编号]")
             return
-        bottle_id = _safe_int(args[0], -1)
+        bottle_id = _safe_int(parts[0], -1)
         if bottle_id < 0:
             yield event.plain_result("请输入正确的漂流瓶 ID")
             return
@@ -1024,5 +1201,8 @@ class WebBottlePlugin(Star):
     # ---------------------------- 卸载 ---------------------------- #
     async def terminate(self):
         """插件被停用 / 卸载时关闭数据库连接"""
+        global _ACTIVE_PLUGIN
+        if _ACTIVE_PLUGIN is self:
+            _ACTIVE_PLUGIN = None
         self.store.close()
         logger.info("漂流瓶插件已卸载，数据库连接已关闭")
