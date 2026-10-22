@@ -2,7 +2,7 @@
 
 本插件由 NoneBot 插件 nonebot-plugin-web-bottle 迁移而来，功能保持一致：
 
-- 群聊 / 私聊内：丢瓶子、捡瓶子、评论漂流瓶、点赞漂流瓶、查看漂流瓶；
+- 群聊 / 私聊内：扔漂流瓶、捡漂流瓶、评论漂流瓶、点赞漂流瓶、查看漂流瓶；
 - AstrBot WebUI 内：漂流瓶审核台（审核漂流瓶与评论）。
 
 数据存放在 ``data/plugin_data/astrbot_plugin_web_bottle/``，与插件目录分离，
@@ -57,8 +57,8 @@ STATE_REJECTED = 100
 STATE_APPROVED = 200
 
 HELP_TEXT_TEMPLATE = """漂流瓶使用帮助
-{p}丢瓶子 [文字]（可附带图片）  把瓶子扔进大海，等待审核
-{p}捡瓶子                       随机捞一个已通过审核的瓶子
+{p}扔漂流瓶 [文字]（可附带图片） 把瓶子扔进大海，等待审核
+{p}捡漂流瓶                       随机捞一个已通过审核的瓶子
 {p}评论漂流瓶 [编号] [内容]     给漂流瓶留言（需审核后展示）
 {p}点赞漂流瓶 [编号]            给喜欢的瓶子点个赞
 {p}查看漂流瓶 [编号]            按编号查看漂流瓶
@@ -67,8 +67,8 @@ HELP_TEXT_TEMPLATE = """漂流瓶使用帮助
 # 指令 key -> 指令名与别名（用于「无前缀 / 自定义前缀」模式匹配）
 COMMAND_NAMES: dict[str, tuple[str, ...]] = {
     "help": ("漂流瓶", "漂流瓶菜单", "漂流瓶帮助"),
-    "throw": ("丢瓶子", "扔瓶子"),
-    "get": ("捡瓶子", "捡漂流瓶", "捞瓶子"),
+    "throw": ("扔漂流瓶", "丢瓶子", "扔瓶子"),
+    "get": ("捡漂流瓶", "捡瓶子", "捞瓶子"),
     "read": ("查看漂流瓶",),
     "comment": ("评论漂流瓶",),
     "up": ("点赞漂流瓶",),
@@ -890,19 +890,19 @@ class WebBottlePlugin(Star):
         async for result in handler(event, args):
             yield result
 
-    # ---------------------------- 指令：丢瓶子 ---------------------------- #
-    @filter.command("丢瓶子", alias={"扔瓶子"})
+    # ---------------------------- 指令：扔漂流瓶 ---------------------------- #
+    @filter.command("扔漂流瓶", alias={"丢瓶子", "扔瓶子"})
     async def throw_bottle(self, event: AstrMessageEvent):
-        """丢一个漂流瓶，支持文字与图片，审核通过后才会出现"""
+        """扔一个漂流瓶，支持文字与图片，审核通过后才会出现"""
         async for result in self._handle_throw(
-            event, self._command_args(event, "丢瓶子", "扔瓶子")
+            event, self._command_args(event, "扔漂流瓶", "丢瓶子", "扔瓶子")
         ):
             yield result
 
     async def _handle_throw(self, event: AstrMessageEvent, content: str):
         remaining = self._cooldown_remaining(event, "throw")
         if remaining > 0:
-            yield event.plain_result(f"丢瓶子冷却中，请 {remaining} 秒后再试~")
+            yield event.plain_result(f"扔漂流瓶冷却中，请 {remaining} 秒后再试~")
             return
 
         images = await self._message_images(event)
@@ -918,13 +918,13 @@ class WebBottlePlugin(Star):
             return
 
         if len(content) > max_word:
-            yield event.plain_result(f"丢瓶子失败啦，请不要超过 {max_word} 个字符哦~")
+            yield event.plain_result(f"扔漂流瓶失败啦，请不要超过 {max_word} 个字符哦~")
             return
         if len([line for line in content.splitlines() if line.strip()]) > max_lines:
-            yield event.plain_result(f"丢瓶子失败啦，请不要超过 {max_lines} 行内容哦~")
+            yield event.plain_result(f"扔漂流瓶失败啦，请不要超过 {max_lines} 行内容哦~")
             return
         if len(images) > max_pic:
-            yield event.plain_result(f"丢瓶子失败啦，请不要超过 {max_pic} 张图片哦~")
+            yield event.plain_result(f"扔漂流瓶失败啦，请不要超过 {max_pic} 张图片哦~")
             return
 
         bottle_id = self.store.next_bottle_id()
@@ -951,15 +951,15 @@ class WebBottlePlugin(Star):
             bottle_id, content, userid, group_id, username, group_name, timeinfo
         ):
             yield event.plain_result(
-                f"丢瓶子成功！瓶子 ID 是：{bottle_id}，"
+                f"扔漂流瓶成功！瓶子 ID 是：{bottle_id}，"
                 "将在管理员审核通过后出现在大海中~"
             )
         else:
             self.store.delete_images(bottle_id)
-            yield event.plain_result("丢瓶子失败啦，出现未知异常，请稍后再试")
+            yield event.plain_result("扔漂流瓶失败啦，出现未知异常，请稍后再试")
 
-    # ---------------------------- 指令：捡瓶子 ---------------------------- #
-    @filter.command("捡瓶子", alias={"捡漂流瓶", "捞瓶子"})
+    # ---------------------------- 指令：捡漂流瓶 ---------------------------- #
+    @filter.command("捡漂流瓶", alias={"捡瓶子", "捞瓶子"})
     async def get_bottle(self, event: AstrMessageEvent):
         """随机捞一个已经通过审核的漂流瓶"""
         async for result in self._handle_get(event):
@@ -968,12 +968,12 @@ class WebBottlePlugin(Star):
     async def _handle_get(self, event: AstrMessageEvent, args: str = ""):
         remaining = self._cooldown_remaining(event, "get")
         if remaining > 0:
-            yield event.plain_result(f"捞瓶子冷却中，请 {remaining} 秒后再试~")
+            yield event.plain_result(f"捡漂流瓶冷却中，请 {remaining} 秒后再试~")
             return
 
         row = self.store.random_approved()
         if row is None:
-            yield event.plain_result("捞瓶子失败，大海里还没有漂流瓶~")
+            yield event.plain_result("捡漂流瓶失败，大海里还没有漂流瓶~")
             return
         for chain in self._bottle_chains(event, row):
             yield event.chain_result(chain)

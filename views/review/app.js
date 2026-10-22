@@ -401,7 +401,14 @@ async function main() {
   }
 
   try {
-    const context = await bridge.ready();
+    // 大部分情况下 bridge.ready() 会立即返回上下文；
+    // 加超时兜底，避免父页面没有回传 context 时整页一直空白。
+    const readyPromise =
+      typeof bridge.ready === "function" ? bridge.ready() : Promise.resolve(null);
+    const context = await Promise.race([
+      readyPromise,
+      new Promise((resolve) => window.setTimeout(() => resolve(null), 1500)),
+    ]);
     applyTheme(context);
     if (typeof bridge.onContext === "function") {
       bridge.onContext((next) => applyTheme(next));

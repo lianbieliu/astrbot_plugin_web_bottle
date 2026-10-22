@@ -2,7 +2,7 @@
   "require_prefix": {
     "type": "bool",
     "description": "指令必须带前缀",
-    "hint": "开启时需要用前缀触发指令（默认 /）；关闭后直接发送「丢瓶子 ……」也能触发，无需 /。",
+    "hint": "开启时需要用前缀触发指令（默认 /）；关闭后直接发送「扔漂流瓶 ……」也能触发，无需 /。",
     "default": true
   },
   "command_prefix": {
@@ -34,13 +34,13 @@
   },
   "embedded_help": {
     "type": "bool",
-    "description": "丢瓶子没写内容时附带帮助",
+    "description": "扔漂流瓶没写内容时附带帮助",
     "hint": "关闭后只提示「您还没有写好瓶子的内容哦~」。",
     "default": true
   },
   "cooling_time": {
     "type": "int",
-    "description": "丢瓶子 / 捡瓶子的冷却时间（秒）",
+    "description": "扔漂流瓶 / 捡漂流瓶的冷却时间（秒）",
     "hint": "按用户独立计算；设为 0 表示不限制。",
     "default": 6,
     "slider": { "min": 0, "max": 120, "step": 1 }
@@ -59,14 +59,14 @@
   },
   "max_bottle_comments": {
     "type": "int",
-    "description": "捡瓶子时最多展示的评论条数",
+    "description": "捡漂流瓶时最多展示的评论条数",
     "default": 3,
     "slider": { "min": 0, "max": 20, "step": 1 }
   },
   "show_sender_name": {
     "type": "bool",
     "description": "展示漂流瓶发送者昵称",
-    "hint": "昵称在用户丢瓶子时记录，不依赖协议端接口。",
+    "hint": "昵称在用户扔漂流瓶时记录，不依赖协议端接口。",
     "default": true
   },
   "show_group_name": {

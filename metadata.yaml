@@ -1,8 +1,8 @@
 name: astrbot_plugin_web_bottle
 display_name: 漂流瓶 · Web 审核台
-short_desc: 在聊天里丢瓶子、捡瓶子，并在 AstrBot WebUI 中审核漂流瓶与评论。
+short_desc: 在聊天里扔漂流瓶、捡漂流瓶，并在 AstrBot WebUI 中审核漂流瓶与评论。
 desc: >-
-  一个带 WebUI 审核台的漂流瓶插件：支持丢瓶子、捡瓶子、评论、点赞、按编号查看，
+  一个带 WebUI 审核台的漂流瓶插件：支持扔漂流瓶、捡漂流瓶、评论、点赞、按编号查看，
   用户提交的瓶子与评论需经审核后才会出现在大海里。
   审核台直接内嵌在 AstrBot WebUI 的插件详情页中，无需额外端口、无需单独登录。
 version: v1.1.0
